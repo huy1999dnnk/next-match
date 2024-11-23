@@ -3,12 +3,15 @@ import Link from 'next/link'
 import React from 'react'
 import { GiMatchTip } from 'react-icons/gi'
 import NavLink from './NavLink'
+import { auth } from '@/auth'
+import UserMenu from './UserMenu'
 
-export default function TopNav() {
+export default async function TopNav() {
+    const session = await auth();
     return (
         <Navbar
             maxWidth='xl'
-            className='bg-gradient-to-r from-purple-400 to-purple-700' 
+            className='bg-gradient-to-r from-purple-400 to-purple-700'
             classNames={{
                 item: [
                     'text-xl',
@@ -26,13 +29,20 @@ export default function TopNav() {
                 </div>
             </NavbarBrand>
             <NavbarContent justify='center'>
-                <NavLink  href='/members' label='Matches' />
-                <NavLink  href='/lists' label='Lists' />
-                <NavLink  href='/messages' label='Messages' />
+                <NavLink href='/members' label='Matches' />
+                <NavLink href='/lists' label='Lists' />
+                <NavLink href='/messages' label='Messages' />
             </NavbarContent>
             <NavbarContent justify='end'>
-                <Button variant='bordered' as={Link} href='/login' className='text-white'>Login</Button>
-                <Button variant='bordered' as={Link} href='/register' className='text-white'>Register</Button>
+                {session?.user ? (
+                    <UserMenu user={session.user} />
+                ) : (
+                    <>
+                        <Button variant='bordered' as={Link} href='/login' className='text-white'>Login</Button>
+                        <Button variant='bordered' as={Link} href='/register' className='text-white'>Register</Button>
+                    </>
+                )}
+
             </NavbarContent>
         </Navbar>
     )

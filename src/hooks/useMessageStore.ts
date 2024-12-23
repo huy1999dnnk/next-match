@@ -8,7 +8,8 @@ type MessageState = {
     add: (message: MessageDTO) => void 
     remove: (id: string) => void 
     set: (messages: MessageDTO[]) => void 
-    updateUnreadCount: (amount: number) => void
+    updateUnreadCount: (amount: number) => void;
+    resetMessages: () => void
 }
 
 const useMessageStore = create<MessageState>()(devtools((set) => ({
@@ -20,10 +21,17 @@ const useMessageStore = create<MessageState>()(devtools((set) => ({
     remove: (id) => set(state => ({
         messages: state.messages.filter(message => message.id !== id)
     })),
-    set: (messages) => set({messages}),
+    set: (messages) => set(state => {
+        const map = new Map([...state.messages, ...messages].map(m => [m.id, m]))
+        const uniqueMessages = Array.from(map.values());
+        return {
+            messages: uniqueMessages
+        }
+    }),
     updateUnreadCount: (amount: number) => set((state) => ({
         unreadCount: state.unreadCount + amount
-    }))
+    })),
+    resetMessages: () => set({messages: []})
 }),{
     name: 'messageStore'
 }))

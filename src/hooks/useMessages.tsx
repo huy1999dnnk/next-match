@@ -1,28 +1,41 @@
-import { deleteMessage } from "@/app/actions/messageActions";
+import { deleteMessage, getMessagesByContainer } from "@/app/actions/messageActions";
 import { MessageDTO } from "@/types";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Key } from "react";
 import useMessageStore from "./useMessageStore";
 
-export const useMessages = (initialMessages: MessageDTO[]) => {
-
-    const { set, remove, messages, updateUnreadCount } = useMessageStore()
+export const useMessages = (initialMessages: MessageDTO[], nextCursor?: string) => {
+    const cursorRef = useRef(nextCursor)
+    const { set, remove, messages, updateUnreadCount, resetMessages } = useMessageStore()
     const searchParams = useSearchParams()
     const router = useRouter()
     const isOutbox = searchParams.get('container') === 'outbox';
+    const container = searchParams.get('container')
     const [isDeleting, setDeleting] = useState({
         id: '',
         loading: false
     })
 
+    const [loadingMore, setLoadingMore] = useState(false)
+
     useEffect(() => {
         set(initialMessages)
-
+        cursorRef.current = nextCursor
         return () => {
-            set([])
+            resetMessages()
         }
-    }, [initialMessages, set])
+    }, [initialMessages, nextCursor, resetMessages, set])
+
+    const loadmore = useCallback(async() => {
+        if(cursorRef.current) {
+            setLoadingMore(true)
+            const {messages, nextCursor} = await getMessagesByContainer(container, cursorRef.current)
+            set(messages)
+            cursorRef.current = nextCursor
+            setLoadingMore(false)
+        }
+    },[container, set])
 
     const columns = [
         {
@@ -69,6 +82,9 @@ export const useMessages = (initialMessages: MessageDTO[]) => {
         deleteMessage: handleDeleteMessage,
         selectRow: handleRowSelect,
         isDeleting,
-        messages
+        messages,
+        loadmore,
+        loadingMore,
+        hasMore: !!cursorRef.current
     }
 }
